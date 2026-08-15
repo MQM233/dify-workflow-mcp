@@ -1,0 +1,20 @@
+app:
+  description: Fetch external data through HTTP, normalize it, and analyze with an LLM.
+  icon: 🌐
+  icon_background: '#DBEAFE'
+  mode: workflow
+  name: HTTP Analysis Workflow
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.3.1
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload: {enabled: false}
+    retriever_resource: {enabled: false}
+  graph:
+    nodes: []
+    edges: []
+    viewport: {x: 0, y: 0, zoom: 0.7}

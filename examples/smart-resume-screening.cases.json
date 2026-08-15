@@ -1,0 +1,13 @@
+[
+  {
+    "name": "基础筛选报告生成",
+    "inputs": {
+      "job_description": "招聘 Java 后端工程师，3年以上经验，熟悉 Spring Boot、MySQL、Redis，有高并发系统经验优先，需要良好的沟通协作能力。",
+      "resume_text": "候选人：张三。5年 Java 后端经验，熟悉 Spring Boot、MyBatis、MySQL、Redis。曾负责订单系统接口优化，将平均响应时间从900ms降低到280ms；参与秒杀活动系统改造，支持峰值约8000 QPS。具备跨部门沟通经验。",
+      "screening_criteria": "优先考虑有性能优化、高并发、业务结果量化经验的候选人。"
+    },
+    "expect": {
+      "status": "succeeded"
+    }
+  }
+]

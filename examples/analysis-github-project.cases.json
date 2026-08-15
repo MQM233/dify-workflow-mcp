@@ -1,0 +1,22 @@
+[
+  {
+    "name": "analyze public github repo",
+    "inputs": {
+      "github_url": "https://github.com/langgenius/dify",
+      "focus": "项目定位、核心能力、适合什么团队使用"
+    },
+    "expect": {
+      "status": "succeeded"
+    }
+  },
+  {
+    "name": "invalid url should still return controlled report",
+    "inputs": {
+      "github_url": "not-a-github-url",
+      "focus": "说明错误原因"
+    },
+    "expect": {
+      "status": "succeeded"
+    }
+  }
+]

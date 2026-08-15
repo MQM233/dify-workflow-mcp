@@ -1,0 +1,252 @@
+app:
+  description: 智筛简历：面向 HR 的多维度简历评分与筛选工作流，输入岗位 JD、简历文本和补充筛选标准，输出结构化评分、风险提示和录用建议。
+  icon: 🧠
+  icon_background: '#E0F2FE'
+  mode: workflow
+  name: 智筛简历
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.3.1
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: llm
+      id: 1756000000001-source-1756000000002-target
+      source: '1756000000001'
+      sourceHandle: source
+      target: '1756000000002'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: end
+      id: 1756000000002-source-1756000000003-target
+      source: '1756000000002'
+      sourceHandle: source
+      target: '1756000000003'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: HR 输入岗位 JD、简历文本和补充筛选标准。
+        selected: false
+        title: 开始
+        type: start
+        variables:
+        - label: 岗位 JD / 招聘要求
+          max_length: 5000
+          options: []
+          required: true
+          type: paragraph
+          variable: job_description
+        - label: 简历文本
+          max_length: 20000
+          options: []
+          required: true
+          type: paragraph
+          variable: resume_text
+        - label: 补充筛选标准（可选）
+          max_length: 3000
+          options: []
+          required: false
+          type: paragraph
+          variable: screening_criteria
+      height: 142
+      id: '1756000000001'
+      position:
+        x: 80
+        y: 260
+      positionAbsolute:
+        x: 80
+        y: 260
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: 多维度评分、风险识别、排序建议。
+        model:
+          completion_params:
+            temperature: 0.2
+          mode: chat
+          name: deepseek-chat
+          provider: langgenius/deepseek/deepseek
+        prompt_template:
+        - id: smart-system-prompt
+          role: system
+          text: |
+            你是“智筛简历”智能体，一位严谨、客观、重证据的资深招聘专家与 HRBP。
+
+            你的任务是基于岗位 JD、简历文本和补充筛选标准，为 HR 提供多维度、全面且细致的候选人评分。你的输出必须帮助 HR 快速判断候选人是否值得进入下一轮，而不是泛泛评价。
+
+            评分原则：
+            1. 只基于输入材料判断，不要编造简历中没有的信息。
+            2. 对每个分数都必须给出证据引用或原因。
+            3. 明确区分“强匹配证据”“弱匹配证据”“缺失信息”“潜在风险”。
+            4. 如果 JD 不完整，要说明假设，并降低结论确定性。
+            5. 避免基于性别、年龄、民族、婚育、地域等敏感因素进行不当判断。
+
+            默认评分维度，总分 100：
+            - 硬性条件匹配度 20 分：学历、年限、行业背景、证书、地点、语言等。
+            - 专业技能匹配度 25 分：核心技能、工具、技术栈、方法论与 JD 的匹配。
+            - 项目/业务经验匹配度 20 分：相关项目、业务场景、复杂度、成果质量。
+            - 成果与影响力 15 分：可量化结果、业务价值、效率提升、成本降低等。
+            - 稳定性与发展潜力 10 分：职业路径、成长曲线、学习能力、岗位上限。
+            - 表达质量与可信度 10 分：简历结构、逻辑、真实性风险、信息完整度。
+
+            输出必须使用简体中文，并严格按以下 Markdown 结构：
+
+            # 智筛简历评分报告
+
+            ## 1. 总体结论
+            - 总分：X/100
+            - 推荐等级：强烈推荐 / 推荐 / 暂缓 / 不推荐
+            - 一句话判断：
+            - 适合进入下一轮：是/否/需人工复核
+
+            ## 2. 维度评分表
+            用 Markdown 表格输出：维度、分数、权重、关键证据、扣分原因。
+
+            ## 3. 岗位匹配分析
+            - 强匹配点：
+            - 部分匹配点：
+            - 明显缺口：
+
+            ## 4. 风险与疑点
+            按高/中/低风险列出，并说明 HR 面试时应如何验证。
+
+            ## 5. 面试追问建议
+            给出 5-8 个高价值追问问题，必须贴合 JD 和简历。
+
+            ## 6. HR 快速决策建议
+            - 建议动作：
+            - 适合岗位/职级：
+            - 薪资或职级谈判注意点：
+            - 需要人工复核的信息：
+
+            ## 7. JSON 摘要
+            最后输出一个 JSON 代码块，字段包括 total_score、recommendation、next_step、top_strengths、top_risks、missing_information。
+        - id: smart-user-prompt
+          role: user
+          text: |
+            请根据以下信息完成“智筛简历”评分。
+
+            ## 岗位 JD / 招聘要求
+            ```text
+            {{{#1756000000001.job_description#}}}
+            ```
+
+            ## 简历文本
+            ```text
+            {{{#1756000000001.resume_text#}}}
+            ```
+
+            ## 补充筛选标准
+            ```text
+            {{{#1756000000001.screening_criteria#}}}
+            ```
+        selected: false
+        title: 智筛评分 LLM
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 98
+      id: '1756000000002'
+      position:
+        x: 420
+        y: 282
+      positionAbsolute:
+        x: 420
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: 输出智筛简历评分报告。
+        outputs:
+        - value_selector:
+          - '1756000000002'
+          - text
+          value_type: string
+          variable: screening_report
+        selected: false
+        title: 结束
+        type: end
+      height: 90
+      id: '1756000000003'
+      position:
+        x: 760
+        y: 282
+      positionAbsolute:
+        x: 760
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: 0
+      y: 0
+      zoom: 0.8

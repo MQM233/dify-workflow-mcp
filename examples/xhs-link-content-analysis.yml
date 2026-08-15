@@ -1,0 +1,473 @@
+app:
+  description: 输入小红书链接，优先尝试抓取页面内容；如果页面反爬或内容不足，则结合用户粘贴正文生成内容分析报告。
+  icon: 🔎
+  icon_background: "#FEE2E2"
+  mode: workflow
+  name: 小红书链接内容分析-MCP
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.3.1
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      enabled: false
+    opening_statement: ""
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ""
+      voice: ""
+  graph:
+    edges:
+      - id: 1757000000001-source-1757000000002-target
+        source: "1757000000001"
+        sourceHandle: source
+        target: "1757000000002"
+        targetHandle: target
+        type: custom
+        data:
+          sourceType: start
+          targetType: code
+          isInIteration: false
+          isInLoop: false
+        zIndex: 0
+      - id: 1757000000002-source-1757000000003-target
+        source: "1757000000002"
+        sourceHandle: source
+        target: "1757000000003"
+        targetHandle: target
+        type: custom
+        data:
+          sourceType: code
+          targetType: http-request
+          isInIteration: false
+          isInLoop: false
+        zIndex: 0
+      - id: 1757000000003-source-1757000000004-target
+        source: "1757000000003"
+        sourceHandle: source
+        target: "1757000000004"
+        targetHandle: target
+        type: custom
+        data:
+          sourceType: http-request
+          targetType: code
+          isInIteration: false
+          isInLoop: false
+        zIndex: 0
+      - id: 1757000000004-source-1757000000005-target
+        source: "1757000000004"
+        sourceHandle: source
+        target: "1757000000005"
+        targetHandle: target
+        type: custom
+        data:
+          sourceType: code
+          targetType: llm
+          isInIteration: false
+          isInLoop: false
+        zIndex: 0
+      - id: 1757000000005-source-1757000000006-target
+        source: "1757000000005"
+        sourceHandle: source
+        target: "1757000000006"
+        targetHandle: target
+        type: custom
+        data:
+          sourceType: llm
+          targetType: end
+          isInIteration: false
+          isInLoop: false
+        zIndex: 0
+    nodes:
+      - id: "1757000000001"
+        type: custom
+        sourcePosition: right
+        targetPosition: left
+        position:
+          x: 80
+          y: 260
+        positionAbsolute:
+          x: 80
+          y: 260
+        width: 244
+        height: 98
+        data:
+          title: Start
+          type: start
+          variables:
+            - variable: xhs_url
+              label: 小红书链接
+              type: text-input
+              required: true
+              max_length: 1500
+              options: []
+            - variable: pasted_content
+              label: 粘贴正文（可选）
+              type: paragraph
+              required: false
+              max_length: 20000
+              options: []
+            - variable: focus
+              label: 分析重点（可选）
+              type: paragraph
+              required: false
+              max_length: 2000
+              options: []
+      - id: "1757000000002"
+        type: custom
+        sourcePosition: right
+        targetPosition: left
+        position: &a1
+          x: 420
+          y: 260
+        positionAbsolute: *a1
+        width: 244
+        height: 98
+        data:
+          title: 规范化链接
+          desc: 校验并规范化小红书链接，提取可能的笔记 ID。
+          type: code
+          code_language: python3
+          code: >-
+            import re
+
+            from urllib.parse import urlparse
+
+
+            def main(xhs_url: str, pasted_content: str = '') -> dict:
+                raw = (xhs_url or '').strip()
+                pasted = (pasted_content or '').strip()
+                warning = ''
+                normalized = raw
+                if raw and not re.match(r'^https?://', raw, re.I):
+                    normalized = 'https://' + raw
+                parsed = urlparse(normalized) if normalized else urlparse('')
+                host = (parsed.netloc or '').lower()
+                is_xhs = any(domain in host for domain in ['xiaohongshu.com', 'xhslink.com', 'xhs.cn'])
+                if not normalized or not is_xhs:
+                    warning = '输入看起来不是标准小红书链接；仍会尝试基于用户粘贴内容分析。'
+                    normalized = 'https://www.xiaohongshu.com'
+                note_id = ''
+                patterns = [r'/explore/([A-Za-z0-9]+)', r'/discovery/item/([A-Za-z0-9]+)', r'note_id=([A-Za-z0-9]+)', r'/item/([A-Za-z0-9]+)']
+                for pattern in patterns:
+                    match = re.search(pattern, normalized)
+                    if match:
+                        note_id = match.group(1)
+                        break
+                return {
+                    'normalized_url': normalized,
+                    'note_id': note_id,
+                    'input_warning': warning,
+                    'has_pasted_content': bool(pasted)
+                }
+          variables:
+            - variable: xhs_url
+              value_selector:
+                - "1757000000001"
+                - xhs_url
+            - variable: pasted_content
+              value_selector:
+                - "1757000000001"
+                - pasted_content
+          outputs:
+            normalized_url:
+              type: string
+              children: null
+            note_id:
+              type: string
+              children: null
+            input_warning:
+              type: string
+              children: null
+            has_pasted_content:
+              type: boolean
+              children: null
+      - id: "1757000000003"
+        type: custom
+        sourcePosition: right
+        targetPosition: left
+        position: &a2
+          x: 760
+          y: 260
+        positionAbsolute: *a2
+        width: 244
+        height: 98
+        data:
+          title: 抓取页面
+          desc: 尝试直接访问小红书页面。小红书可能存在反爬限制，失败时后续节点会使用用户粘贴正文兜底。
+          type: http-request
+          method: get
+          url: "{{#1757000000002.normalized_url#}}"
+          headers: |-
+            User-Agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36
+            Accept:text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+            Accept-Language:zh-CN,zh;q=0.9,en;q=0.8
+          params: ""
+          body:
+            type: none
+            data: []
+          authorization:
+            type: no-auth
+            config: null
+          timeout:
+            max_connect_timeout: 0
+            max_read_timeout: 0
+            max_write_timeout: 0
+          variables:
+            - variable: normalized_url
+              value_selector:
+                - "1757000000002"
+                - normalized_url
+      - id: "1757000000004"
+        type: custom
+        sourcePosition: right
+        targetPosition: left
+        position: &a3
+          x: 1100
+          y: 260
+        positionAbsolute: *a3
+        width: 244
+        height: 98
+        data:
+          title: 提取正文
+          desc: 从 HTTP HTML 和用户粘贴正文中整理出可分析文本。
+          type: code
+          code_language: python3
+          code: >-
+            import html
+
+            import re
+
+
+            def _first(patterns, text):
+                for pattern in patterns:
+                    match = re.search(pattern, text or '', re.I | re.S)
+                    if match:
+                        return html.unescape(match.group(1)).strip()
+                return ''
+
+            def _clean_html(raw):
+                text = raw or ''
+                text = re.sub(r'<script[\s\S]*?</script>', ' ', text, flags=re.I)
+                text = re.sub(r'<style[\s\S]*?</style>', ' ', text, flags=re.I)
+                text = re.sub(r'<[^>]+>', ' ', text)
+                text = html.unescape(text)
+                text = re.sub(r'\s+', ' ', text).strip()
+                return text
+
+            def main(body: str = '', status_code: int = 0, pasted_content: str =
+            '', xhs_url: str = '', note_id: str = '', input_warning: str = '')
+            -> dict:
+                pasted = (pasted_content or '').strip()
+                raw_body = body or ''
+                status = str(status_code or '')
+                title = _first([
+                    r'<meta[^>]+property=["\']og:title["\'][^>]+content=["\']([^"\']+)',
+                    r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:title["\']',
+                    r'<title[^>]*>(.*?)</title>'
+                ], raw_body)
+                description = _first([
+                    r'<meta[^>]+name=["\']description["\'][^>]+content=["\']([^"\']+)',
+                    r'<meta[^>]+property=["\']og:description["\'][^>]+content=["\']([^"\']+)',
+                    r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+name=["\']description["\']'
+                ], raw_body)
+                html_text = _clean_html(raw_body)
+                source = 'http_html'
+                warning_parts = []
+                if input_warning:
+                    warning_parts.append(input_warning)
+                if status and status not in ['200', '201', '202', '203', '204']:
+                    warning_parts.append(f'页面抓取状态码为 {status}，可能无法直接读取小红书内容。')
+                if pasted:
+                    source = 'pasted_content'
+                    content = pasted
+                    if html_text:
+                        content = pasted + '\n\n[页面抓取补充信息]\n标题：' + title + '\n描述：' + description
+                else:
+                    content = '\n'.join(part for part in [title, description, html_text] if part)
+                    if len(content) < 120:
+                        warning_parts.append('未检测到足够正文；小红书常见反爬会导致只能拿到登录页或空壳页面。建议补充粘贴正文。')
+                if len(content) > 45000:
+                    content = content[:45000] + '\n\n[内容过长，已截断。]'
+                return {
+                    'analysis_source': source,
+                    'content_text': content,
+                    'page_title': title,
+                    'page_description': description,
+                    'fetch_status': status,
+                    'extraction_warning': '\n'.join(warning_parts),
+                    'note_id': note_id or ''
+                }
+          variables:
+            - variable: body
+              value_selector:
+                - "1757000000003"
+                - body
+            - variable: status_code
+              value_selector:
+                - "1757000000003"
+                - status_code
+            - variable: pasted_content
+              value_selector:
+                - "1757000000001"
+                - pasted_content
+            - variable: xhs_url
+              value_selector:
+                - "1757000000001"
+                - xhs_url
+            - variable: note_id
+              value_selector:
+                - "1757000000002"
+                - note_id
+            - variable: input_warning
+              value_selector:
+                - "1757000000002"
+                - input_warning
+          outputs:
+            analysis_source:
+              type: string
+              children: null
+            content_text:
+              type: string
+              children: null
+            page_title:
+              type: string
+              children: null
+            page_description:
+              type: string
+              children: null
+            fetch_status:
+              type: string
+              children: null
+            extraction_warning:
+              type: string
+              children: null
+            note_id:
+              type: string
+              children: null
+      - id: "1757000000005"
+        type: custom
+        sourcePosition: right
+        targetPosition: left
+        position: &a4
+          x: 1440
+          y: 260
+        positionAbsolute: *a4
+        width: 244
+        height: 98
+        data:
+          title: 内容分析 LLM
+          desc: 对小红书笔记内容做结构化分析。
+          type: llm
+          model:
+            provider: langgenius/deepseek/deepseek
+            name: deepseek-chat
+            mode: chat
+            completion_params:
+              temperature: 0.2
+          prompt_template:
+            - role: system
+              text: |-
+                你是“小红书内容分析助手”，擅长分析小红书笔记的内容定位、种草逻辑、用户需求、商业价值和可复用写法。
+
+                要求：
+                1. 只基于输入链接、抓取内容、用户粘贴正文和分析重点作答，不要编造作者、点赞、收藏、评论等未提供数据。
+                2. 如果抓取失败或内容不足，要明确说明限制，并优先基于用户粘贴正文分析。
+                3. 输出使用简体中文，面向内容运营、品牌营销、产品同学和创作者。
+                4. 对无法确认的信息标注“当前输入无法确认”。
+                5. 给出可执行建议，不要只做泛泛总结。
+
+                输出结构必须如下：
+                # 小红书内容分析报告
+                ## 1. 一句话概括
+                ## 2. 内容主题与目标人群
+                ## 3. 核心卖点、痛点与情绪价值
+                ## 4. 笔记结构拆解
+                ## 5. 标题/封面/开头的吸引力判断
+                ## 6. 种草或转化路径分析
+                ## 7. 可复用的表达和内容模板
+                ## 8. 风险、缺失信息与需要补充的数据
+                ## 9. 优化建议
+                ## 10. JSON 摘要
+                JSON 摘要字段包括 topic、target_audience、selling_points、pain_points、content_structure、optimization_suggestions、missing_information。
+            - role: user
+              text: |-
+                请分析下面这条小红书内容。
+
+                ## 输入信息
+                - 原始链接：{{#1757000000001.xhs_url#}}
+                - 笔记 ID：{{#1757000000004.note_id#}}
+                - 分析重点：{{#1757000000001.focus#}}
+                - 内容来源：{{#1757000000004.analysis_source#}}
+                - 页面抓取状态：{{#1757000000004.fetch_status#}}
+                - 抓取/提取提醒：{{#1757000000004.extraction_warning#}}
+
+                ## 页面标题
+                {{#1757000000004.page_title#}}
+
+                ## 页面描述
+                {{#1757000000004.page_description#}}
+
+                ## 可分析内容
+                ```text
+                {{{#1757000000004.content_text#}}}
+                ```
+
+                请输出完整的小红书内容分析报告。
+          variables: []
+          context:
+            enabled: false
+            variable_selector: []
+          vision:
+            enabled: false
+      - id: "1757000000006"
+        type: custom
+        sourcePosition: right
+        targetPosition: left
+        position: &a5
+          x: 1780
+          y: 260
+        positionAbsolute: *a5
+        width: 244
+        height: 98
+        data:
+          title: End
+          desc: ""
+          type: end
+          outputs:
+            - variable: xhs_analysis_report
+              value_selector:
+                - "1757000000005"
+                - text
+              value_type: string
+            - variable: analysis_source
+              value_selector:
+                - "1757000000004"
+                - analysis_source
+              value_type: string
+            - variable: fetch_status
+              value_selector:
+                - "1757000000004"
+                - fetch_status
+              value_type: string
+            - variable: extraction_warning
+              value_selector:
+                - "1757000000004"
+                - extraction_warning
+              value_type: string
+    viewport:
+      x: 0
+      y: 0
+      zoom: 0.7

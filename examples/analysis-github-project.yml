@@ -1,0 +1,497 @@
+app:
+  description: 输入 GitHub 项目 URL，自动获取 README 与仓库根目录结构，并用大语言模型生成项目解读报告。
+  icon: 🤖
+  icon_background: '#E0F2FE'
+  mode: workflow
+  name: 解读Github项目智能机器人
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.3.1
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      enabled: false
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: code
+      id: 1756100000001-source-1756100000002-target
+      source: '1756100000001'
+      sourceHandle: source
+      target: '1756100000002'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: http-request
+      id: 1756100000002-source-1756100000003-target
+      source: '1756100000002'
+      sourceHandle: source
+      target: '1756100000003'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: http-request
+      id: 1756100000002-source-1756100000004-target
+      source: '1756100000002'
+      sourceHandle: source
+      target: '1756100000004'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: http-request
+        targetType: code
+      id: 1756100000003-source-1756100000005-target
+      source: '1756100000003'
+      sourceHandle: source
+      target: '1756100000005'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: http-request
+        targetType: code
+      id: 1756100000004-source-1756100000006-target
+      source: '1756100000004'
+      sourceHandle: source
+      target: '1756100000006'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: llm
+      id: 1756100000005-source-1756100000007-target
+      source: '1756100000005'
+      sourceHandle: source
+      target: '1756100000007'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: llm
+      id: 1756100000006-source-1756100000007-target
+      source: '1756100000006'
+      sourceHandle: source
+      target: '1756100000007'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: end
+      id: 1756100000007-source-1756100000008-target
+      source: '1756100000007'
+      sourceHandle: source
+      target: '1756100000008'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: 用户输入 GitHub 项目 URL，例如 https://github.com/langgenius/dify。
+        selected: false
+        title: 开始
+        type: start
+        variables:
+        - label: GitHub 项目 URL
+          max_length: 1000
+          options: []
+          required: true
+          type: text-input
+          variable: github_url
+        - label: 关注重点（可选）
+          max_length: 1000
+          options: []
+          required: false
+          type: paragraph
+          variable: focus
+      height: 116
+      id: '1756100000001'
+      position:
+        x: 80
+        y: 260
+      positionAbsolute:
+        x: 80
+        y: 260
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        code: "import re\n\ndef main(github_url: str) -> dict:\n    raw = (github_url or '').strip()\n    match = re.search(r'https?://github\\.com/([^/\\s]+)/([^/\\s#?]+)', raw)\n    if not match:\n        return {\n            'owner': '',\n            'repo': '',\n            'repo_full_name': '',\n            'repo_web_url': raw,\n            'api_readme_url': 'https://api.github.com/zen',\n            'api_structure_url': 'https://api.github.com/zen',\n            'input_error': 'Invalid GitHub repository URL. Expected https://github.com/{owner}/{repo}.'\n        }\n    owner = match.group(1)\n    repo = match.group(2)\n    if repo.endswith('.git'):\n        repo = repo[:-4]\n    repo_full_name = f'{owner}/{repo}'\n    return {\n        'owner': owner,\n        'repo': repo,\n        'repo_full_name': repo_full_name,\n        'repo_web_url': f'https://github.com/{repo_full_name}',\n        'api_readme_url': f'https://api.github.com/repos/{repo_full_name}/readme',\n        'api_structure_url': f'https://api.github.com/repos/{repo_full_name}/contents',\n        'input_error': ''\n    }"
+        code_language: python3
+        desc: 从用户输入中提取 owner/repo，并构造 GitHub API URL。
+        outputs:
+          api_readme_url:
+            children: null
+            type: string
+          api_structure_url:
+            children: null
+            type: string
+          input_error:
+            children: null
+            type: string
+          owner:
+            children: null
+            type: string
+          repo:
+            children: null
+            type: string
+          repo_full_name:
+            children: null
+            type: string
+          repo_web_url:
+            children: null
+            type: string
+        selected: false
+        title: 解析 GitHub URL
+        type: code
+        variables:
+        - value_selector:
+          - '1756100000001'
+          - github_url
+          variable: github_url
+      height: 98
+      id: '1756100000002'
+      position:
+        x: 420
+        y: 260
+      positionAbsolute:
+        x: 420
+        y: 260
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        authorization:
+          config: null
+          type: no-auth
+        body:
+          data: []
+          type: none
+        desc: 调用 GitHub API 获取 README 元数据和 base64 内容。
+        headers: "Accept:application/vnd.github+json\nUser-Agent:Dify-GitHub-Project-Analyzer"
+        method: get
+        params: ''
+        retry_config:
+          max_retries: 2
+          retry_enabled: true
+          retry_interval: 1000
+        selected: false
+        timeout:
+          max_connect_timeout: 0
+          max_read_timeout: 0
+          max_write_timeout: 0
+        title: 获取 README
+        type: http-request
+        url: '{{#1756100000002.api_readme_url#}}'
+        variables:
+        - value_selector:
+          - '1756100000002'
+          - api_readme_url
+          variable: api_readme_url
+      height: 134
+      id: '1756100000003'
+      position:
+        x: 760
+        y: 160
+      positionAbsolute:
+        x: 760
+        y: 160
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        authorization:
+          config: null
+          type: no-auth
+        body:
+          data: []
+          type: none
+        desc: 调用 GitHub API 获取仓库根目录结构。
+        headers: "Accept:application/vnd.github+json\nUser-Agent:Dify-GitHub-Project-Analyzer"
+        method: get
+        params: ''
+        retry_config:
+          max_retries: 2
+          retry_enabled: true
+          retry_interval: 1000
+        selected: false
+        timeout:
+          max_connect_timeout: 0
+          max_read_timeout: 0
+          max_write_timeout: 0
+        title: 获取项目结构
+        type: http-request
+        url: '{{#1756100000002.api_structure_url#}}'
+        variables:
+        - value_selector:
+          - '1756100000002'
+          - api_structure_url
+          variable: api_structure_url
+      height: 134
+      id: '1756100000004'
+      position:
+        x: 760
+        y: 380
+      positionAbsolute:
+        x: 760
+        y: 380
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        code: "import base64\nimport json\n\ndef main(body: str, status_code: int) -> dict:\n    try:\n        data = json.loads(body or '{}')\n    except Exception as exc:\n        return {\n            'readme_text': '',\n            'readme_name': '',\n            'readme_path': '',\n            'readme_error': f'Failed to parse README response: {exc}'\n        }\n    if status_code and int(status_code) >= 400:\n        return {\n            'readme_text': '',\n            'readme_name': '',\n            'readme_path': '',\n            'readme_error': data.get('message') or f'GitHub README request failed with status {status_code}'\n        }\n    content = data.get('content') or ''\n    encoding = data.get('encoding') or ''\n    try:\n        if encoding == 'base64':\n            text = base64.b64decode(content).decode('utf-8', errors='replace')\n        else:\n            text = content\n    except Exception as exc:\n        text = ''\n        error = f'Failed to decode README: {exc}'\n    else:\n        error = ''\n    text = text.replace('\\r\\n', '\\n').replace('\\r', '\\n')\n    if len(text) > 45000:\n        text = text[:45000] + '\\n\\n[README truncated because it is too long.]'\n    return {\n        'readme_text': text,\n        'readme_name': data.get('name') or 'README',\n        'readme_path': data.get('path') or '',\n        'readme_error': error\n    }"
+        code_language: python3
+        desc: 解析 GitHub README API 返回值，把 base64 README 转成纯文本。
+        outputs:
+          readme_error:
+            children: null
+            type: string
+          readme_name:
+            children: null
+            type: string
+          readme_path:
+            children: null
+            type: string
+          readme_text:
+            children: null
+            type: string
+        selected: false
+        title: README 转纯文本
+        type: code
+        variables:
+        - value_selector:
+          - '1756100000003'
+          - body
+          variable: body
+        - value_selector:
+          - '1756100000003'
+          - status_code
+          variable: status_code
+      height: 98
+      id: '1756100000005'
+      position:
+        x: 1100
+        y: 160
+      positionAbsolute:
+        x: 1100
+        y: 160
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        code: "import json\n\ndef main(body: str, status_code: int) -> dict:\n    try:\n        data = json.loads(body or '[]')\n    except Exception as exc:\n        return {\n            'structure_text': '',\n            'structure_json': '[]',\n            'structure_error': f'Failed to parse structure response: {exc}'\n        }\n    if status_code and int(status_code) >= 400:\n        message = data.get('message') if isinstance(data, dict) else ''\n        return {\n            'structure_text': '',\n            'structure_json': '[]',\n            'structure_error': message or f'GitHub structure request failed with status {status_code}'\n        }\n    items = data if isinstance(data, list) else []\n    simplified = []\n    lines = []\n    for item in items[:80]:\n        entry = {\n            'name': item.get('name'),\n            'path': item.get('path'),\n            'type': item.get('type'),\n            'size': item.get('size'),\n            'download_url': item.get('download_url')\n        }\n        simplified.append(entry)\n        icon = 'DIR ' if entry['type'] == 'dir' else 'FILE'\n        size = '' if entry['size'] in (None, 0) else f\" ({entry['size']} bytes)\"\n        lines.append(f\"- {icon} {entry['path']}{size}\")\n    return {\n        'structure_text': '\\n'.join(lines),\n        'structure_json': json.dumps(simplified, ensure_ascii=False),\n        'structure_error': ''\n    }"
+        code_language: python3
+        desc: 将仓库根目录结构压缩成 LLM 友好的纯文本和 JSON。
+        outputs:
+          structure_error:
+            children: null
+            type: string
+          structure_json:
+            children: null
+            type: string
+          structure_text:
+            children: null
+            type: string
+        selected: false
+        title: 项目结构转文本
+        type: code
+        variables:
+        - value_selector:
+          - '1756100000004'
+          - body
+          variable: body
+        - value_selector:
+          - '1756100000004'
+          - status_code
+          variable: status_code
+      height: 98
+      id: '1756100000006'
+      position:
+        x: 1100
+        y: 380
+      positionAbsolute:
+        x: 1100
+        y: 380
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: 根据 README 与目录结构生成面向用户的项目解读报告。
+        model:
+          completion_params:
+            temperature: 0.2
+          mode: chat
+          name: deepseek-chat
+          provider: langgenius/deepseek/deepseek
+        prompt_template:
+        - id: github-analysis-system
+          role: system
+          text: |
+            你是“解读 GitHub 项目智能机器人”，擅长快速阅读开源项目 README 和目录结构，并把技术项目讲清楚。
+
+            要求：
+            1. 只基于输入的 README、仓库结构和用户关注重点作答，不要编造仓库中没有的信息。
+            2. 如果 README 或结构获取失败，要明确说明失败原因，并基于仍可用的信息给出有限分析。
+            3. 输出要适合技术经理、开发者或产品同学快速判断项目价值。
+            4. 保留关键英文技术名词，但整体使用简体中文。
+            5. 对部署、依赖、许可证、活跃度等无法从输入判断的内容，要标注“未从当前输入确认”。
+
+            输出结构必须如下：
+            # GitHub 项目解读报告
+            ## 1. 项目一句话概括
+            ## 2. 这个项目解决什么问题
+            ## 3. 核心能力与主要特性
+            ## 4. README 关键信息提炼
+            ## 5. 目录结构初步解读
+            ## 6. 适合的使用场景
+            ## 7. 上手路径
+            ## 8. 风险、缺口与需要继续确认的问题
+            ## 9. 给不同角色的建议
+            ## 10. JSON 摘要
+            最后的 JSON 摘要字段包括 project_name、repo_url、summary、main_features、use_cases、risks、next_steps。
+        - id: github-analysis-user
+          role: user
+          text: |
+            请解读下面这个 GitHub 项目。
+
+            ## 项目信息
+            - 仓库：{{#1756100000002.repo_full_name#}}
+            - URL：{{#1756100000002.repo_web_url#}}
+            - 用户关注重点：{{#1756100000001.focus#}}
+            - 输入错误：{{#1756100000002.input_error#}}
+
+            ## README 获取状态
+            - README 文件：{{#1756100000005.readme_name#}}
+            - README 路径：{{#1756100000005.readme_path#}}
+            - README 错误：{{#1756100000005.readme_error#}}
+
+            ## README 纯文本
+            ```markdown
+            {{{#1756100000005.readme_text#}}}
+            ```
+
+            ## 项目结构获取状态
+            - 结构错误：{{#1756100000006.structure_error#}}
+
+            ## 项目根目录结构
+            ```text
+            {{{#1756100000006.structure_text#}}}
+            ```
+        selected: false
+        title: 项目解读 LLM
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 98
+      id: '1756100000007'
+      position:
+        x: 1440
+        y: 260
+      positionAbsolute:
+        x: 1440
+        y: 260
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: 输出 GitHub 项目解读报告。
+        outputs:
+        - value_selector:
+          - '1756100000007'
+          - text
+          value_type: string
+          variable: project_analysis_report
+        - value_selector:
+          - '1756100000002'
+          - repo_full_name
+          value_type: string
+          variable: repo_full_name
+        - value_selector:
+          - '1756100000005'
+          - readme_error
+          value_type: string
+          variable: readme_error
+        - value_selector:
+          - '1756100000006'
+          - structure_error
+          value_type: string
+          variable: structure_error
+        selected: false
+        title: 结束
+        type: end
+      height: 116
+      id: '1756100000008'
+      position:
+        x: 1780
+        y: 260
+      positionAbsolute:
+        x: 1780
+        y: 260
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: 0
+      y: 0
+      zoom: 0.7

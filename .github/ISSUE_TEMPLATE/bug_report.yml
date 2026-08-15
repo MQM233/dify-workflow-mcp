@@ -1,0 +1,38 @@
+name: Bug report
+description: Report a reproducible problem with the MCP server or generated DSL.
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Do not include cookies, tokens, private URLs, or sensitive workflow data.
+  - type: input
+    id: version
+    attributes:
+      label: Project version
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Node.js, browser, MCP client, Dify edition/version.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Sanitized logs or validation output
+      render: shell

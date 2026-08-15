@@ -1,0 +1,65 @@
+{
+  "name": "dify-workflow-mcp",
+  "version": "0.2.0-beta.1",
+  "description": "Generate, validate, import, test, and manage Dify workflows from any MCP client.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "author": "MQM233",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MQM233/dify-workflow-mcp.git"
+  },
+  "homepage": "https://github.com/MQM233/dify-workflow-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/MQM233/dify-workflow-mcp/issues"
+  },
+  "keywords": [
+    "dify",
+    "mcp",
+    "model-context-protocol",
+    "workflow",
+    "automation",
+    "codex",
+    "claude-code",
+    "openclaw"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "dify-workflow-mcp": "src/mcp-server.mjs",
+    "difyctl": "src/difyctl.mjs"
+  },
+  "files": [
+    "src/",
+    "schemas/",
+    "scripts/",
+    "skills/",
+    "rules/",
+    "docs/",
+    "examples/",
+    "README.md",
+    "README.zh-CN.md",
+    "LICENSE",
+    "NOTICE",
+    "CHANGELOG.md",
+    "SECURITY.md"
+  ],
+  "scripts": {
+    "start": "node src/mcp-server.mjs",
+    "mcp": "node src/mcp-server.mjs",
+    "dify": "node src/difyctl.mjs",
+    "check": "node --check src/dify-core.mjs && node --check src/mcp-server.mjs && node --check src/difyctl.mjs && node --check src/dsl-validator.mjs && node --check src/workflow-ir.mjs",
+    "test": "node --test tests/unit/*.test.mjs",
+    "test:integration": "node --test tests/integration/*.test.mjs",
+    "test:all": "npm run test && npm run test:integration",
+    "validate:examples": "node scripts/validate-examples.mjs",
+    "prepublishOnly": "npm run check && npm run test:all && npm run validate:examples"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "playwright": "^1.53.0",
+    "yaml": "^2.9.0",
+    "zod": "^4.4.3"
+  }
+}

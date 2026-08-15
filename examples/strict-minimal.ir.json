@@ -1,0 +1,43 @@
+{
+  "app": {
+    "name": "严格生成器示例",
+    "mode": "workflow",
+    "description": "由 Workflow IR 渲染生成的最小 LLM 工作流。"
+  },
+  "modelDefaults": {
+    "provider": "langgenius/deepseek/deepseek",
+    "name": "deepseek-chat",
+    "temperature": 0.2
+  },
+  "inputs": [
+    {
+      "name": "input_text",
+      "label": "输入文本",
+      "type": "paragraph",
+      "required": true,
+      "max_length": 5000
+    }
+  ],
+  "nodes": [
+    {
+      "id": "summarize",
+      "type": "llm",
+      "title": "总结 LLM",
+      "systemPrompt": "你是一个严谨的中文摘要助手。请用要点总结用户输入，最后给出一句结论。",
+      "userPrompt": "{{{#start.input_text#}}}"
+    }
+  ],
+  "edges": [
+    {
+      "source": "start",
+      "target": "summarize"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "summary",
+      "selector": "summarize.text",
+      "valueType": "string"
+    }
+  ]
+}

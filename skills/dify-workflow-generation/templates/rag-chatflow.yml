@@ -1,0 +1,118 @@
+app:
+  description: Chat assistant grounded in a Dify knowledge base.
+  icon: 📚
+  icon_background: '#E4FBCC'
+  mode: advanced-chat
+  name: RAG Chat Assistant
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.3.1
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload: {enabled: false}
+    opening_statement: ''
+    retriever_resource: {enabled: true}
+    sensitive_word_avoidance: {enabled: false}
+    speech_to_text: {enabled: false}
+    suggested_questions: []
+    suggested_questions_after_answer: {enabled: false}
+    text_to_speech: {enabled: false}
+  graph:
+    edges:
+    - data: {isInIteration: false, isInLoop: false, sourceType: start, targetType: knowledge-retrieval}
+      id: 1756210000001-source-1756210000002-target
+      source: '1756210000001'
+      sourceHandle: source
+      target: '1756210000002'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data: {isInIteration: false, isInLoop: false, sourceType: knowledge-retrieval, targetType: llm}
+      id: 1756210000002-source-1756210000003-target
+      source: '1756210000002'
+      sourceHandle: source
+      target: '1756210000003'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data: {isInIteration: false, isInLoop: false, sourceType: llm, targetType: answer}
+      id: 1756210000003-source-1756210000004-target
+      source: '1756210000003'
+      sourceHandle: source
+      target: '1756210000004'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data: {title: Start, type: start, variables: []}
+      id: '1756210000001'
+      position: {x: 80, y: 260}
+      positionAbsolute: {x: 80, y: 260}
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        title: Knowledge Retrieval
+        type: knowledge-retrieval
+        query_variable_selector: [sys, query]
+        dataset_ids:
+        - REPLACE_WITH_DATASET_ID
+        retrieval_mode: multiple
+        multiple_retrieval_config:
+          top_k: 4
+          score_threshold: null
+          reranking_enable: false
+        metadata_filtering_mode: disabled
+      id: '1756210000002'
+      position: {x: 420, y: 260}
+      positionAbsolute: {x: 420, y: 260}
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: true
+          variable_selector: ['1756210000002', result]
+        memory:
+          query_prompt_template: '{{#sys.query#}}'
+          window: {enabled: false, size: 10}
+        model:
+          completion_params: {temperature: 0.2}
+          mode: chat
+          name: deepseek-chat
+          provider: langgenius/deepseek/deepseek
+        prompt_template:
+        - role: system
+          text: |
+            Answer based only on the retrieved knowledge context.
+            If the answer is not in the context, say you do not know.
+            Include source hints when available.
+        title: LLM
+        type: llm
+        variables: []
+        vision: {enabled: false}
+      id: '1756210000003'
+      position: {x: 760, y: 260}
+      positionAbsolute: {x: 760, y: 260}
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        answer: '{{#1756210000003.text#}}'
+        title: Answer
+        type: answer
+        variables: []
+      id: '1756210000004'
+      position: {x: 1100, y: 260}
+      positionAbsolute: {x: 1100, y: 260}
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport: {x: 0, y: 0, zoom: 0.7}

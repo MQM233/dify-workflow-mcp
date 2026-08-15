@@ -1,0 +1,212 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.dify-workflow/workflow-ir.schema.json",
+  "title": "Dify Workflow IR",
+  "type": "object",
+  "required": ["app", "inputs", "nodes"],
+  "additionalProperties": false,
+  "properties": {
+    "app": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "description": { "type": "string" },
+        "icon": { "type": "string" },
+        "icon_background": { "type": "string" },
+        "mode": { "type": "string", "enum": ["workflow", "advanced-chat"], "default": "workflow" }
+      }
+    },
+    "inputs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/input" },
+      "default": []
+    },
+    "nodes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/node" },
+      "minItems": 1
+    },
+    "edges": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/edge" },
+      "default": []
+    },
+    "outputs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/output" },
+      "default": []
+    }
+  },
+  "$defs": {
+    "selector": {
+      "oneOf": [
+        { "type": "string", "description": "Example: start.query or summarize.text" },
+        {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 2
+        }
+      ]
+    },
+    "input": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "label": { "type": "string" },
+        "type": {
+          "type": "string",
+          "enum": ["text-input", "paragraph", "select", "number", "file", "file-list"],
+          "default": "text-input"
+        },
+        "required": { "type": "boolean", "default": true },
+        "max_length": { "type": "integer", "minimum": 1 },
+        "options": { "type": "array", "items": { "type": "string" }, "default": [] },
+        "default": {}
+      }
+    },
+    "position": {
+      "type": "object",
+      "required": ["x", "y"],
+      "additionalProperties": false,
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" }
+      }
+    },
+    "baseNode": {
+      "type": "object",
+      "required": ["id", "type"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "type": { "type": "string" },
+        "title": { "type": "string" },
+        "desc": { "type": "string", "default": "" },
+        "position": { "$ref": "#/$defs/position" }
+      }
+    },
+    "nodeInputBinding": {
+      "type": "object",
+      "required": ["name", "selector"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "selector": { "$ref": "#/$defs/selector" }
+      }
+    },
+    "node": {
+      "oneOf": [
+        {
+          "allOf": [
+            { "$ref": "#/$defs/baseNode" },
+            {
+              "type": "object",
+              "required": ["type", "code"],
+              "properties": {
+                "type": { "const": "code" },
+                "language": { "type": "string", "enum": ["python3", "javascript"], "default": "python3" },
+                "code": { "type": "string" },
+                "inputs": { "type": "array", "items": { "$ref": "#/$defs/nodeInputBinding" }, "default": [] },
+                "outputs": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string",
+                    "enum": ["string", "number", "object", "array", "boolean"]
+                  },
+                  "default": { "result": "string" }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/baseNode" },
+            {
+              "type": "object",
+              "required": ["type", "url"],
+              "properties": {
+                "type": { "const": "http-request" },
+                "method": { "type": "string", "enum": ["get", "post", "put", "patch", "delete", "head"], "default": "get" },
+                "url": { "type": "string", "minLength": 1 },
+                "headers": { "type": "string", "default": "" },
+                "params": { "type": "string", "default": "" },
+                "bodyType": {
+                  "type": "string",
+                  "enum": ["none", "json", "raw-text", "form-data", "x-www-form-urlencoded", "binary"],
+                  "default": "none"
+                },
+                "body": { "type": "string", "default": "" },
+                "inputs": { "type": "array", "items": { "$ref": "#/$defs/nodeInputBinding" }, "default": [] }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/baseNode" },
+            {
+              "type": "object",
+              "required": ["type"],
+              "properties": {
+                "type": { "const": "llm" },
+                "systemPrompt": { "type": "string", "default": "" },
+                "userPrompt": { "type": "string", "default": "" },
+                "model": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "provider": { "type": "string" },
+                    "name": { "type": "string" },
+                    "mode": { "type": "string", "default": "chat" },
+                    "temperature": { "type": "number", "default": 0.2 }
+                  },
+                  "default": {}
+                },
+                "contextSelector": { "$ref": "#/$defs/selector" }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/baseNode" },
+            {
+              "type": "object",
+              "required": ["type", "querySelector", "datasetIds"],
+              "properties": {
+                "type": { "const": "knowledge-retrieval" },
+                "querySelector": { "$ref": "#/$defs/selector" },
+                "datasetIds": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+                "retrievalMode": { "type": "string", "enum": ["multiple", "single"], "default": "multiple" },
+                "topK": { "type": "integer", "minimum": 1, "default": 4 },
+                "scoreThreshold": { "type": ["number", "null"], "default": null }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "edge": {
+      "type": "object",
+      "required": ["source", "target"],
+      "additionalProperties": false,
+      "properties": {
+        "source": { "type": "string" },
+        "target": { "type": "string" }
+      }
+    },
+    "output": {
+      "type": "object",
+      "required": ["name", "selector"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "selector": { "$ref": "#/$defs/selector" }
+      }
+    }
+  }
+}

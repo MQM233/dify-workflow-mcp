@@ -1,0 +1,21 @@
+app:
+  description: Review an uploaded document and generate a structured report.
+  icon: 📄
+  icon_background: '#FEE2E2'
+  mode: workflow
+  name: Document Review Workflow
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.3.1
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      enabled: true
+    retriever_resource: {enabled: false}
+  graph:
+    nodes: []
+    edges: []
+    viewport: {x: 0, y: 0, zoom: 0.7}

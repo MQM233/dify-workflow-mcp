@@ -1,0 +1,172 @@
+{
+  "app": {
+    "name": "小红书链接内容分析-MCP",
+    "mode": "workflow",
+    "description": "输入小红书链接，优先尝试抓取页面内容；如果页面反爬或内容不足，则结合用户粘贴正文生成内容分析报告。",
+    "icon": "🔎",
+    "icon_background": "#FEE2E2"
+  },
+  "modelDefaults": {
+    "provider": "langgenius/deepseek/deepseek",
+    "name": "deepseek-chat",
+    "temperature": 0.2
+  },
+  "inputs": [
+    {
+      "name": "xhs_url",
+      "label": "小红书链接",
+      "type": "text-input",
+      "required": true,
+      "max_length": 1500
+    },
+    {
+      "name": "pasted_content",
+      "label": "粘贴正文（可选）",
+      "type": "paragraph",
+      "required": false,
+      "max_length": 20000
+    },
+    {
+      "name": "focus",
+      "label": "分析重点（可选）",
+      "type": "paragraph",
+      "required": false,
+      "max_length": 2000
+    }
+  ],
+  "nodes": [
+    {
+      "id": "normalize_url",
+      "type": "code",
+      "title": "规范化链接",
+      "desc": "校验并规范化小红书链接，提取可能的笔记 ID。",
+      "language": "python3",
+      "inputs": [
+        {
+          "name": "xhs_url",
+          "selector": "start.xhs_url"
+        },
+        {
+          "name": "pasted_content",
+          "selector": "start.pasted_content"
+        }
+      ],
+      "outputs": {
+        "normalized_url": "string",
+        "note_id": "string",
+        "input_warning": "string",
+        "has_pasted_content": "boolean"
+      },
+      "code": "import re\nfrom urllib.parse import urlparse\n\ndef main(xhs_url: str, pasted_content: str = '') -> dict:\n    raw = (xhs_url or '').strip()\n    pasted = (pasted_content or '').strip()\n    warning = ''\n    normalized = raw\n    if raw and not re.match(r'^https?://', raw, re.I):\n        normalized = 'https://' + raw\n    parsed = urlparse(normalized) if normalized else urlparse('')\n    host = (parsed.netloc or '').lower()\n    is_xhs = any(domain in host for domain in ['xiaohongshu.com', 'xhslink.com', 'xhs.cn'])\n    if not normalized or not is_xhs:\n        warning = '输入看起来不是标准小红书链接；仍会尝试基于用户粘贴内容分析。'\n        normalized = 'https://www.xiaohongshu.com'\n    note_id = ''\n    patterns = [r'/explore/([A-Za-z0-9]+)', r'/discovery/item/([A-Za-z0-9]+)', r'note_id=([A-Za-z0-9]+)', r'/item/([A-Za-z0-9]+)']\n    for pattern in patterns:\n        match = re.search(pattern, normalized)\n        if match:\n            note_id = match.group(1)\n            break\n    return {\n        'normalized_url': normalized,\n        'note_id': note_id,\n        'input_warning': warning,\n        'has_pasted_content': bool(pasted)\n    }"
+    },
+    {
+      "id": "fetch_page",
+      "type": "http-request",
+      "title": "抓取页面",
+      "desc": "尝试直接访问小红书页面。小红书可能存在反爬限制，失败时后续节点会使用用户粘贴正文兜底。",
+      "method": "get",
+      "url": "{{#normalize_url.normalized_url#}}",
+      "headers": "User-Agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36\nAccept:text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\nAccept-Language:zh-CN,zh;q=0.9,en;q=0.8",
+      "params": "",
+      "bodyType": "none",
+      "body": "",
+      "inputs": [
+        {
+          "name": "normalized_url",
+          "selector": "normalize_url.normalized_url"
+        }
+      ]
+    },
+    {
+      "id": "extract_content",
+      "type": "code",
+      "title": "提取正文",
+      "desc": "从 HTTP HTML 和用户粘贴正文中整理出可分析文本。",
+      "language": "python3",
+      "inputs": [
+        {
+          "name": "body",
+          "selector": "fetch_page.body"
+        },
+        {
+          "name": "status_code",
+          "selector": "fetch_page.status_code"
+        },
+        {
+          "name": "pasted_content",
+          "selector": "start.pasted_content"
+        },
+        {
+          "name": "xhs_url",
+          "selector": "start.xhs_url"
+        },
+        {
+          "name": "note_id",
+          "selector": "normalize_url.note_id"
+        },
+        {
+          "name": "input_warning",
+          "selector": "normalize_url.input_warning"
+        }
+      ],
+      "outputs": {
+        "analysis_source": "string",
+        "content_text": "string",
+        "page_title": "string",
+        "page_description": "string",
+        "fetch_status": "string",
+        "extraction_warning": "string",
+        "note_id": "string"
+      },
+      "code": "import html\nimport re\n\ndef _first(patterns, text):\n    for pattern in patterns:\n        match = re.search(pattern, text or '', re.I | re.S)\n        if match:\n            return html.unescape(match.group(1)).strip()\n    return ''\n\ndef _clean_html(raw):\n    text = raw or ''\n    text = re.sub(r'<script[\\s\\S]*?</script>', ' ', text, flags=re.I)\n    text = re.sub(r'<style[\\s\\S]*?</style>', ' ', text, flags=re.I)\n    text = re.sub(r'<[^>]+>', ' ', text)\n    text = html.unescape(text)\n    text = re.sub(r'\\s+', ' ', text).strip()\n    return text\n\ndef main(body: str = '', status_code: int = 0, pasted_content: str = '', xhs_url: str = '', note_id: str = '', input_warning: str = '') -> dict:\n    pasted = (pasted_content or '').strip()\n    raw_body = body or ''\n    status = str(status_code or '')\n    title = _first([\n        r'<meta[^>]+property=[\"\\']og:title[\"\\'][^>]+content=[\"\\']([^\"\\']+)',\n        r'<meta[^>]+content=[\"\\']([^\"\\']+)[\"\\'][^>]+property=[\"\\']og:title[\"\\']',\n        r'<title[^>]*>(.*?)</title>'\n    ], raw_body)\n    description = _first([\n        r'<meta[^>]+name=[\"\\']description[\"\\'][^>]+content=[\"\\']([^\"\\']+)',\n        r'<meta[^>]+property=[\"\\']og:description[\"\\'][^>]+content=[\"\\']([^\"\\']+)',\n        r'<meta[^>]+content=[\"\\']([^\"\\']+)[\"\\'][^>]+name=[\"\\']description[\"\\']'\n    ], raw_body)\n    html_text = _clean_html(raw_body)\n    source = 'http_html'\n    warning_parts = []\n    if input_warning:\n        warning_parts.append(input_warning)\n    if status and status not in ['200', '201', '202', '203', '204']:\n        warning_parts.append(f'页面抓取状态码为 {status}，可能无法直接读取小红书内容。')\n    if pasted:\n        source = 'pasted_content'\n        content = pasted\n        if html_text:\n            content = pasted + '\\n\\n[页面抓取补充信息]\\n标题：' + title + '\\n描述：' + description\n    else:\n        content = '\\n'.join(part for part in [title, description, html_text] if part)\n        if len(content) < 120:\n            warning_parts.append('未检测到足够正文；小红书常见反爬会导致只能拿到登录页或空壳页面。建议补充粘贴正文。')\n    if len(content) > 45000:\n        content = content[:45000] + '\\n\\n[内容过长，已截断。]'\n    return {\n        'analysis_source': source,\n        'content_text': content,\n        'page_title': title,\n        'page_description': description,\n        'fetch_status': status,\n        'extraction_warning': '\\n'.join(warning_parts),\n        'note_id': note_id or ''\n    }"
+    },
+    {
+      "id": "analyze_content",
+      "type": "llm",
+      "title": "内容分析 LLM",
+      "desc": "对小红书笔记内容做结构化分析。",
+      "systemPrompt": "你是“小红书内容分析助手”，擅长分析小红书笔记的内容定位、种草逻辑、用户需求、商业价值和可复用写法。\n\n要求：\n1. 只基于输入链接、抓取内容、用户粘贴正文和分析重点作答，不要编造作者、点赞、收藏、评论等未提供数据。\n2. 如果抓取失败或内容不足，要明确说明限制，并优先基于用户粘贴正文分析。\n3. 输出使用简体中文，面向内容运营、品牌营销、产品同学和创作者。\n4. 对无法确认的信息标注“当前输入无法确认”。\n5. 给出可执行建议，不要只做泛泛总结。\n\n输出结构必须如下：\n# 小红书内容分析报告\n## 1. 一句话概括\n## 2. 内容主题与目标人群\n## 3. 核心卖点、痛点与情绪价值\n## 4. 笔记结构拆解\n## 5. 标题/封面/开头的吸引力判断\n## 6. 种草或转化路径分析\n## 7. 可复用的表达和内容模板\n## 8. 风险、缺失信息与需要补充的数据\n## 9. 优化建议\n## 10. JSON 摘要\nJSON 摘要字段包括 topic、target_audience、selling_points、pain_points、content_structure、optimization_suggestions、missing_information。",
+      "userPrompt": "请分析下面这条小红书内容。\n\n## 输入信息\n- 原始链接：{{#start.xhs_url#}}\n- 笔记 ID：{{#extract_content.note_id#}}\n- 分析重点：{{#start.focus#}}\n- 内容来源：{{#extract_content.analysis_source#}}\n- 页面抓取状态：{{#extract_content.fetch_status#}}\n- 抓取/提取提醒：{{#extract_content.extraction_warning#}}\n\n## 页面标题\n{{#extract_content.page_title#}}\n\n## 页面描述\n{{#extract_content.page_description#}}\n\n## 可分析内容\n```text\n{{{#extract_content.content_text#}}}\n```\n\n请输出完整的小红书内容分析报告。"
+    }
+  ],
+  "edges": [
+    {
+      "source": "start",
+      "target": "normalize_url"
+    },
+    {
+      "source": "normalize_url",
+      "target": "fetch_page"
+    },
+    {
+      "source": "fetch_page",
+      "target": "extract_content"
+    },
+    {
+      "source": "extract_content",
+      "target": "analyze_content"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "xhs_analysis_report",
+      "selector": "analyze_content.text",
+      "valueType": "string"
+    },
+    {
+      "name": "analysis_source",
+      "selector": "extract_content.analysis_source",
+      "valueType": "string"
+    },
+    {
+      "name": "fetch_status",
+      "selector": "extract_content.fetch_status",
+      "valueType": "string"
+    },
+    {
+      "name": "extraction_warning",
+      "selector": "extract_content.extraction_warning",
+      "valueType": "string"
+    }
+  ]
+}
