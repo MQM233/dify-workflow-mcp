@@ -57,7 +57,7 @@
     "prepublishOnly": "npm run check && npm run test:all && npm run validate:examples"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "playwright": ">=1.53.0 <1.62.0",
     "yaml": "^2.9.0",
     "zod": "^4.4.3"
