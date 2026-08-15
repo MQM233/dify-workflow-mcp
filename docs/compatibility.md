@@ -3,6 +3,7 @@
 ## Runtime
 
 - Node.js: 18 or newer.
+- Playwright: versions below 1.62 while Node.js 18 support is maintained.
 - Windows: Chrome and Edge auto-detection included.
 - macOS: Chrome and Edge auto-detection included, including Apple Silicon systems.
 - Linux: common Google Chrome and Chromium paths included.

@@ -7,3 +7,6 @@ updates:
     groups:
       production-dependencies:
         dependency-type: production
+    ignore:
+      - dependency-name: playwright
+        versions: [">=1.62.0"]
