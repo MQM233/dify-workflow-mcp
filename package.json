@@ -50,8 +50,8 @@
     "mcp": "node src/mcp-server.mjs",
     "dify": "node src/difyctl.mjs",
     "check": "node --check src/dify-core.mjs && node --check src/mcp-server.mjs && node --check src/difyctl.mjs && node --check src/dsl-validator.mjs && node --check src/workflow-ir.mjs",
-    "test": "node --test tests/unit/*.test.mjs",
-    "test:integration": "node --test tests/integration/*.test.mjs",
+    "test": "node --test tests/unit/dsl-validator.test.mjs tests/unit/tool-list.test.mjs tests/unit/workflow-ir.test.mjs",
+    "test:integration": "node --test tests/integration/mock-dify.test.mjs",
     "test:all": "npm run test && npm run test:integration",
     "validate:examples": "node scripts/validate-examples.mjs",
     "prepublishOnly": "npm run check && npm run test:all && npm run validate:examples"
