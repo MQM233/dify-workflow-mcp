@@ -1,7 +1,7 @@
 {
   "name": "dify-workflow-mcp",
   "version": "0.2.0-beta.1",
-  "description": "Generate, validate, import, test, and manage Dify workflows from any MCP client.",
+  "description": "Turn natural-language ideas into validated, imported, and tested Dify workflows through MCP.",
   "type": "module",
   "license": "Apache-2.0",
   "author": "MQM233",
@@ -18,7 +18,9 @@
     "mcp",
     "model-context-protocol",
     "workflow",
+    "chatflow",
     "automation",
+    "agent-skills",
     "codex",
     "claude-code",
     "openclaw"
